@@ -1,3 +1,13 @@
+data/creds.txt
+creds/
+data/kaggle/
+data/wikibig/
+.metals
+ProjectGuides/Past_Project_Example.mp4
+ProjectGuides/BIGDATA220_FinalProject_winter2020.pdf
+notes.md
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
