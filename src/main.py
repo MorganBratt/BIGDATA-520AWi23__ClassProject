@@ -8,7 +8,7 @@ configuration = json.loads(conf_json)
 messages = [str(i) for i in range(1)]  # Generating a list of messages to send
 
 weather_client = Weather_Client(configuration["openweathermap"]["uri"], configuration["openweathermap"]["key"])
-weather_client.hello_world()
+weather_client.weather_test()
 exit()
 
 kafka_client = Kafka_Client(configuration["kafka"]["conf"],configuration["kafka"]["topic"])
