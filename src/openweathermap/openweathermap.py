@@ -13,7 +13,7 @@ class Weather_Client:
 
         if response.status_code == 200:
             data = response.json()
-            #print(data)
-            print(response.text)
+            return data
+
         else:
             print('Error fetching weather data')
