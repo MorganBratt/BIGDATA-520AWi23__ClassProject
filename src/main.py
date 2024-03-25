@@ -19,10 +19,11 @@ def lambda_handler(event, context):
     data_repository = DataRepository()
     weather_client = Weather_Client(configuration["openweathermap"]["uri"], configuration["openweathermap"]["key"],configuration["openweathermap"]["coordinates"])    
 
-    bookmark_before = data_repository.get_bookmark()
-    print(f"bookmark get: {bookmark_before}")
+    start_epoch = data_repository.get_bookmark()
+    print(f"start_epoch get: {start_epoch}")
 
-    start_epoch = Utility.datetime_to_epoch("2024-3-21 00:00:00", "%Y-%m-%d %H:%M:%S", "UTC")
+    if start_epoch == 0:
+        start_epoch = data_repository.get_start_date_epoch()
     end_epoch = int(Utility.get_utc_rounded_down(datetime.now(timezone.utc)).timestamp())
 
 
@@ -31,10 +32,8 @@ def lambda_handler(event, context):
         data = weather_client.weather_test(current_time_start,current_time_start+10800)
         kafka_client.write(str(data["coord"]), [str(data["list"])])
         current_time_start += 14400 ## take 4 1 hour samples
+        data_repository.set_bookmark(current_time_start)
         print("loop")
-
-    # todo: bookmarking
-
 
     return {
         'statusCode': 200,
