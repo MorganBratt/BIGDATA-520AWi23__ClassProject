@@ -16,7 +16,7 @@ class S3BucketManager:
             object_name = file_name
         try:
             self.s3.upload_file(file_name, self.bucket_name, object_name)
-            print(f"'{file_name}' has been uploaded to '{self.bucket_name}/{object_name}'")
+            # print(f"'{file_name}' has been uploaded to '{self.bucket_name}/{object_name}'")
         except Exception as e:
             print(f"Error uploading file: {e}")
 
@@ -46,7 +46,7 @@ class S3BucketManager:
         """Upload a string as a file to an S3 bucket."""
         try:
             self.s3.put_object(Body=string_data, Bucket=self.bucket_name, Key=object_name)
-            print(f"'{object_name}' has been updated in '{self.bucket_name}'.")
+            # print(f"'{object_name}' has been updated in '{self.bucket_name}'.")
         except Exception as e:
             print(f"Error updating file: {e}")
 
