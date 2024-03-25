@@ -20,10 +20,10 @@ def lambda_handler(event, context):
     weather_client = Weather_Client(configuration["openweathermap"]["uri"], configuration["openweathermap"]["key"],configuration["openweathermap"]["coordinates"])    
 
     start_epoch = data_repository.get_bookmark()
-
     if start_epoch == 0:
         start_epoch = data_repository.get_start_date_epoch()
     end_epoch = int(Utility.get_utc_rounded_down(datetime.now(timezone.utc)).timestamp())
+    print(f"Starting from date: {Utility.epoch_to_datetime(start_epoch)}")
 
 
     weather_calls = 0
