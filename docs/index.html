@@ -1,40 +1,51 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<head>
+    <meta charset="utf-8">
+    <title>Hello World Presentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-		<title>reveal.js</title>
+    <!-- Link to Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.css">
+    <!-- Link to a theme (Black theme in this case) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/theme/black.css" id="theme">
+    <!-- Link to the highlight plugin's CSS for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/plugins/highlight/monokai.css">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section data-markdown>
+            <textarea data-template>
+                ## Hello World!
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css">
+                - This is a simple presentation using Reveal.js
+                - Hosted via GitHub Pages
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>graph slide<img src="media/graph.png" /></section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+                ---
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+                ## Code Example
+                ```python
+                print("Hello, world!")
+                ```
+            </textarea>
+        </section>
+    </div>
+</div>
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+<!-- Reveal.js library -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.js"></script>
+<!-- Markdown plugin -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/plugin/markdown/markdown.js"></script>
+<!-- Highlight plugin for code syntax highlighting -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/plugins/highlight/highlight.js"></script>
+
+<!-- Initialize Reveal.js with plugins -->
+<script>
+    Reveal.initialize({
+        hash: true,
+        plugins: [ RevealMarkdown, RevealHighlight ]
+    });
+</script>
+</body>
 </html>
