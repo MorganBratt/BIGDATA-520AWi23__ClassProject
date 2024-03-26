@@ -26,3 +26,47 @@ class Utility:
         rounded_hour = (datetime_input.hour // 4) * 4
         rounded_down = datetime_input.replace(hour=rounded_hour, minute=0, second=0, microsecond=0)
         return rounded_down
+    
+# Example usage
+if __name__ == "__main__":
+
+    print(Utility.datetime_to_epoch("2024-3-21 00:00:00", "%Y-%m-%d %H:%M:%S", "UTC"))
+    print(Utility.epoch_to_datetime(1710979200))
+    round_epoch = int(Utility.get_utc_rounded_down(datetime.now(timezone.utc)).timestamp())
+    print(round_epoch)
+    print(Utility.epoch_to_datetime(round_epoch))
+
+
+    start = Utility.datetime_to_epoch("2024-2-1 00:00:00", "%Y-%m-%d %H:%M:%S", "UTC")
+    print(f"back port test start: {start}")
+
+    end = Utility.datetime_to_epoch("2024-3-01 00:00:00", "%Y-%m-%d %H:%M:%S", "UTC")
+    print(f"back port test end: {end}")
+
+    months = [
+        "2024-3-1 00:00:00",
+        "2024-2-1 00:00:00",
+        "2024-1-1 00:00:00",
+        "2023-12-1 00:00:00",
+        "2023-11-1 00:00:00",
+        "2023-10-1 00:00:00",
+        "2023-9-1 00:00:00",
+        "2023-8-1 00:00:00",
+        "2023-7-1 00:00:00",
+        "2023-6-1 00:00:00",
+        "2023-5-1 00:00:00",
+        "2023-4-1 00:00:00",
+    ]
+
+    for month in months:
+        month_epoch = Utility.datetime_to_epoch(month, "%Y-%m-%d %H:%M:%S", "UTC")
+        month_1_hour_back_epoch = month_epoch - 3600
+        month_1_hour_back = Utility.epoch_to_datetime(month_1_hour_back_epoch)
+
+        datetime_obj = datetime.strptime(month_1_hour_back, "%Y-%m-%d %H:%M:%S")
+        datetime_obj = datetime_obj.replace(tzinfo=timezone.utc)
+        start_of_month = datetime(datetime_obj.year, datetime_obj.month, 1, tzinfo=timezone.utc)
+        start_of_month_epoch = int(start_of_month.timestamp())
+        
+        #print(f"{start_of_month}:{start_of_month_epoch}\t{month_1_hour_back}:{month_1_hour_back_epoch}")
+        print(f"({start_of_month_epoch},{month_1_hour_back_epoch}),")
