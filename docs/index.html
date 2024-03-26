@@ -1,6 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
+	<style>
+		.smaller-font {
+			font-size: 28px; /* Adjust as needed */
+		}
+	</style>
     <meta charset="utf-8">
     <title>Hello World Presentation</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,34 +22,173 @@
     <div class="slides">
         <section data-markdown>
             <textarea data-template>
-				## Final Presentation Big data 520 Winter 2024
-				### Morgan Bratt
+				#### Final Presentation Big data 520 Winter 2024
+				#### Morgan Bratt
 
 				Pulling Air Quality Data from OpenWeather
+				![](media/graph.png)
 		
 				---
 		
-				## Code Example
+				#### Overview
 		
-				```python
-				print("Hello, world!")
-				```
-		
-				---
-		
-				## Is this a second slide?
-		
-				- Hello
+				- Project Description
+				- Learning Objectives
+				- Producer Workflow
+				- Consumer Workflow
+				- Data Validation and Analysis
+				- Challenges & Future Work
 		
 				---
 		
-				## Is this a third slide?
+				#### Project Description
+
+				- The objective is to build a streaming data pipeline from OpenWeather that pulls Air Quality Information  (AQI)
+
+
+
+				- Data is pulled from an API that lists the current Qualitative Air quality
+
+				- A producer polls this data every 4 hours and adds it to the Kafka topic
+
+				- A consumer in the form of a databricks notebook consumes this data from the Kafka topic and stores the data in a delta table
 		
-				![](/docs/media/graph.png)
+
 		
-				Text below
+				---
+		
+				#### Learning Objectives
+		
+				- Build a production-ish pipeline that could run independently
+				- Explore using AWS Lambda functions to run the producer code
+				- Keep all the project information in a public GitHub repository
+					- Producer Code
+					- Consumer Notebooks
+					- Presentation (You are here 🙂)
+		
+
+
+
             </textarea>
         </section>
+		<section data-markdown class="smaller-font">
+			<textarea data-template>
+
+				## Building a Python Producer
+
+
+				---
+				
+				#### Example Request
+				![](media/Request.png)
+				
+				---
+
+				#### Example Response
+
+				```json
+				[
+					{
+						"main": {
+							"aqi": 2
+						},
+						"components": {
+							"co": 226.97,
+							"no": 0.09,
+							"no2": 1.59,
+							"o3": 65.8,
+							"so2": 0.07,
+							"pm2_5": 0.5,
+							"pm10": 0.91,
+							"nh3": 0.36
+						},
+						"dt": 1711224000
+					},
+					...
+				]
+				
+
+				---
+				# Air Quality Data
+
+				| Qualitative name | Index | SO2          | NO2         | PM10        | PM2.5       | O3          | CO            |
+				|------------------|-------|--------------|-------------|-------------|-------------|-------------|---------------|
+				| Good             | 1     | [0; 20)      | [0; 40)     | [0; 20)     | [0; 10)     | [0; 60)     | [0; 4400)     |
+				| Fair             | 2     | [20; 80)     | [40; 70)    | [20; 50)    | [10; 25)    | [60; 100)   | [4400; 9400)  |
+				| Moderate         | 3     | [80; 250)    | [70; 150)   | [50; 100)   | [25; 50)    | [100; 140)  | [9400-12400)  |
+				| Poor             | 4     | [250; 350)   | [150; 200)  | [100; 200)  | [50; 75)    | [140; 180)  | [12400; 15400)|
+				| Very Poor        | 5     | ⩾350         | ⩾200        | ⩾200        | ⩾75         | ⩾180        | ⩾15400        |
+		
+				---
+
+				## Static Location
+
+				https://www.google.com/maps?q=48.3263889,-122.0225556
+				
+				![](media/location.png)
+
+				---
+				
+				#### Producer Code Structure
+				```
+				src/
+				├── backport.py
+				├── data/
+				│   ├── data_store.py
+				│   └── s3.py
+				├── deploy.py
+				├── kafka/
+				│   └──kafka.py
+				├── main.py
+				├── openweathermap/
+				│   └── openweathermap.py
+				└── util/
+					└── util.py
+				```
+
+				---
+
+				#### main.py
+
+				```Python
+				# load required configuration and repositories
+				conf_json = os.getenv('PROJECT_CONF')
+				configuration = json.loads(conf_json)
+				
+				kafka_client = Kafka_Client(configuration["kafka"]["conf"],configuration["kafka"]["topic"])
+				data_repository = DataRepository()
+				weather_client = Weather_Client(configuration["openweathermap"]["uri"], configuration["openweathermap"]["key"],configuration["openweathermap"]["coordinates"])    
+			
+				start_epoch = data_repository.get_bookmark()
+				if start_epoch == 0:
+					start_epoch = data_repository.get_start_date_epoch()
+				end_epoch = int(Utility.get_utc_rounded_down(datetime.now(timezone.utc)).timestamp())
+				print(f"Starting from date: {Utility.epoch_to_datetime(start_epoch)}")
+			
+			
+				weather_calls = 0
+				current_time_start = start_epoch
+				while current_time_start < end_epoch:
+					data = weather_client.weather_test(current_time_start,current_time_start+10800)
+					kafka_client.write(str(data["coord"]), [str(data["list"])])
+					print(f"Finished kafka publish for AQI from {Utility.epoch_to_datetime(current_time_start)} to {Utility.epoch_to_datetime(current_time_start + 14400)}")
+					current_time_start += 14400 ## take 4 1 hour samples
+					weather_calls +=1
+					data_repository.set_bookmark(current_time_start)
+					
+			
+				print(f"Finished, {weather_calls} calls to the weather api.")
+				```
+
+				---
+				
+
+
+
+
+
+			</textarea>
+		</section>
     </div>
 </div>
 
