@@ -7,7 +7,7 @@
 		}
 	</style>
     <meta charset="utf-8">
-    <title>Final Presentation Big data 520 Winter 2024 - Morgan Bratt</title>
+    <title>Morgan Bratt BIGDATA-520AWi23</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Link to Reveal.js CSS -->
@@ -181,14 +181,85 @@
 				```
 
 				---
+				#### AWS Resources Used
+				![](media/aws.png)
+
+				---
+
+				##### Example Output from CloudWatch
+				![](media/logs.png)
+
+				---
+
+				## Building a Spark Streaming Consumer 
+
+
+				---
+				#### Setting up the stream
+				```Python
+				# reusing the prodcuer config, I could create one for the consumer but I am lazy..
+				sasl_jaas_config = f'kafkashaded.org.apache.kafka.common.security.plain.PlainLoginModule required username="{kafka_conf["sasl.username"]}" password="{kafka_conf["sasl.password"]}";'
+				df = (spark.readStream
+				.format("kafka")
+				.option("kafka.bootstrap.servers", kafka_conf["bootstrap.servers"])
+				.option("kafka.security.protocol", kafka_conf["security.protocol"])
+				.option("kafka.sasl.mechanism", kafka_conf["sasl.mechanism"]) \
+				.option("kafka.sasl.jaas.config", sasl_jaas_config) \
+				.option("startingOffsets", "earliest") \
+				.option("subscribe", configuration["kafka"]["topic"]) \
+				.option("checkpointLocation", checkpointLocationForKafka) \
+				.load()
+				)
+
+				```
+				
+				---
+				#### Schema Mapping
+				```python
+				#schema for the AQI data
+				air_quality_schema = StructType([
+				StructField("dt", LongType(), True),
+				StructField("main", StructType([
+					StructField("aqi", IntegerType(), True)
+				]), True),
+				StructField("components", StructType([
+					StructField("co", DoubleType(), True),
+					StructField("no", DoubleType(), True),
+					StructField("no2", DoubleType(), True),
+					StructField("o3", DoubleType(), True),
+					StructField("so2", DoubleType(), True),
+					StructField("pm2_5", DoubleType(), True),
+					StructField("pm10", DoubleType(), True),
+					StructField("nh3", DoubleType(), True)
+				]), True)
+				])
+				```
+				---
+				#### Saving the Data to a Delta Table
+				```Python
+				outputPath = "abfss://mb171@bd510fall23.dfs.core.windows.net/FinalProject520/aq_data"
+				checkpointLocationForWrite = "abfss://mb171@bd510fall23.dfs.core.windows.net/FinalProject520/checkpoint"
+
+				query = air_quality_df.writeStream \
+				.format("delta") \
+				.option("checkpointLocation", checkpointLocationForWrite) \
+				.outputMode("append") \
+				.start(outputPath)
+
+				query.awaitTermination()
+
+				```
 				
 
-
-
-
+				---
+				#### Results!
+				![](media/table.png)
 
 			</textarea>
-		</section>
+
+
+
+
     </div>
 </div>
 
