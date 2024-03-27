@@ -18,7 +18,7 @@ The presentation is stored as a [reveal.js](https://revealjs.com/) hosted by the
 ### Supporting notebooks
 Notebooks can be found in the repository under the `consumer` folder or in the path `/Workspace/Users/mb171@uw.edu/Final Project 520` in databricks
 
-[Notebooks Link](https://github.com/MorganBratt/BIGDATA-520AWi23__ClassProject/tree/main/consumer)
+[Notebooks Link](https://github.com/MorganBratt/BIGDATA-520AWi23__ClassProject/tree/main/docs/consumer)
 
 ### Code and Supporting Tools
 Code used to produce the data is located in the `src` folder in GitHub
