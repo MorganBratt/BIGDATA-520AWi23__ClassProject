@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<style>
+		.smaller-font {
+			font-size: 28px; /* Adjust as needed */
+		}
+		.larger-font {
+			font-size: 38px; /* Adjust as needed */
+		}
+	</style>
+	
+    <meta charset="utf-8">
+    <title>Morgan Bratt BIGDATA-520AWi23</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.css">
+    <!-- Link to a theme (Black theme in this case) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/theme/black.css" id="theme">
+    <!-- Link to Highlight.js Stylesheet for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section data-markdown>
+            <textarea data-template>
+				#### Final Presentation Big data 520 Winter 2024
+				#### Morgan Bratt
+
+				Pulling Air Quality Data from OpenWeather
+				![](media/graph.png)
+		
+				---
+		
+				#### Overview
+		
+				- Project Description
+				- Learning Objectives
+				- Producer Workflow
+				- Consumer Workflow
+				- Data Validation and Analysis
+				- Challenges & Future Work
+		
+				---
+		
+				#### Project Description
+
+				- The objective is to build a streaming data pipeline from OpenWeather that pulls Air Quality Information  (AQI)
+
+
+
+				- Data is pulled from an API that lists the current Qualitative Air quality
+
+				- A producer polls this data every 4 hours and adds it to the Kafka topic
+
+				- A consumer in the form of a databricks notebook consumes this data from the Kafka topic and stores the data in a delta table
+		
+
+		
+				---
+		
+				#### Learning Objectives
+		
+				- Build a production-ish pipeline that could run independently
+				- Explore using AWS Lambda functions to run the producer code
+				- Keep all the project information in a public GitHub repository
+					- Producer Code
+					- Consumer Notebooks
+					- Presentation (You are here 🙂)
+		
+
+
+
+            </textarea>
+        </section>
+		<section data-markdown class="smaller-font">
+			<textarea data-template>
+
+				## Building a Python Producer
+
+
+				---
+				
+				#### Example Request
+				![](media/request.png)
+				
+				---
+
+				#### Example Response
+
+				```json
+				[
+					{
+						"main": {
+							"aqi": 2
+						},
+						"components": {
+							"co": 226.97,
+							"no": 0.09,
+							"no2": 1.59,
+							"o3": 65.8,
+							"so2": 0.07,
+							"pm2_5": 0.5,
+							"pm10": 0.91,
+							"nh3": 0.36
+						},
+						"dt": 1711224000
+					},
+					...
+				]
+				
+
+				---
+				# Air Quality Data
+
+				| Qualitative name | Index | SO2          | NO2         | PM10        | PM2.5       | O3          | CO            |
+				|------------------|-------|--------------|-------------|-------------|-------------|-------------|---------------|
+				| Good             | 1     | [0; 20)      | [0; 40)     | [0; 20)     | [0; 10)     | [0; 60)     | [0; 4400)     |
+				| Fair             | 2     | [20; 80)     | [40; 70)    | [20; 50)    | [10; 25)    | [60; 100)   | [4400; 9400)  |
+				| Moderate         | 3     | [80; 250)    | [70; 150)   | [50; 100)   | [25; 50)    | [100; 140)  | [9400-12400)  |
+				| Poor             | 4     | [250; 350)   | [150; 200)  | [100; 200)  | [50; 75)    | [140; 180)  | [12400; 15400)|
+				| Very Poor        | 5     | ⩾350         | ⩾200        | ⩾200        | ⩾75         | ⩾180        | ⩾15400        |
+		
+				---
+
+				## Static Location
+
+				https://www.google.com/maps?q=48.3263889,-122.0225556
+				
+				![](media/location.png)
+
+				---
+				
+				#### Producer Code Structure
+				```
+				src/
+				├── backport.py
+				├── data/
+				│   ├── data_store.py
+				│   └── s3.py
+				├── deploy.py
+				├── kafka/
+				│   └──kafka.py
+				├── main.py
+				├── openweathermap/
+				│   └── openweathermap.py
+				└── util/
+					└── util.py
+				```
+
+				---
+
+				#### main.py
+
+				```Python
+				# load required configuration and repositories
+				conf_json = os.getenv('PROJECT_CONF')
+				configuration = json.loads(conf_json)
+				
+				kafka_client = Kafka_Client(configuration["kafka"]["conf"],configuration["kafka"]["topic"])
+				data_repository = DataRepository()
+				weather_client = Weather_Client(configuration["openweathermap"]["uri"], configuration["openweathermap"]["key"],configuration["openweathermap"]["coordinates"])    
+			
+				start_epoch = data_repository.get_bookmark()
+				if start_epoch == 0:
+					start_epoch = data_repository.get_start_date_epoch()
+				end_epoch = int(Utility.get_utc_rounded_down(datetime.now(timezone.utc)).timestamp())
+				print(f"Starting from date: {Utility.epoch_to_datetime(start_epoch)}")
+			
+			
+				weather_calls = 0
+				current_time_start = start_epoch
+				while current_time_start < end_epoch:
+					data = weather_client.weather_test(current_time_start,current_time_start+10800)
+					kafka_client.write(str(data["coord"]), [str(data["list"])])
+					print(f"Finished kafka publish for AQI from {Utility.epoch_to_datetime(current_time_start)} to {Utility.epoch_to_datetime(current_time_start + 14400)}")
+					current_time_start += 14400 ## take 4 1 hour samples
+					weather_calls +=1
+					data_repository.set_bookmark(current_time_start)
+					
+			
+				print(f"Finished, {weather_calls} calls to the weather api.")
+				```
+
+				---
+				#### AWS Resources Used
+				![](media/aws.png)
+
+				---
+
+				##### Example Output from CloudWatch
+				![](media/logs.png)
+
+				---
+
+				## Building a Spark Streaming Consumer 
+
+
+				---
+				#### Setting up the stream
+				```Python
+				# reusing the prodcuer config, I could create one for the consumer but I am lazy..
+				sasl_jaas_config = f'kafkashaded.org.apache.kafka.common.security.plain.PlainLoginModule required username="{kafka_conf["sasl.username"]}" password="{kafka_conf["sasl.password"]}";'
+				df = (spark.readStream
+				.format("kafka")
+				.option("kafka.bootstrap.servers", kafka_conf["bootstrap.servers"])
+				.option("kafka.security.protocol", kafka_conf["security.protocol"])
+				.option("kafka.sasl.mechanism", kafka_conf["sasl.mechanism"]) \
+				.option("kafka.sasl.jaas.config", sasl_jaas_config) \
+				.option("startingOffsets", "earliest") \
+				.option("subscribe", configuration["kafka"]["topic"]) \
+				.option("checkpointLocation", checkpointLocationForKafka) \
+				.load()
+				)
+
+				```
+				
+				---
+				#### Schema Mapping
+				```python
+				#schema for the AQI data
+				air_quality_schema = StructType([
+				StructField("dt", LongType(), True),
+				StructField("main", StructType([
+					StructField("aqi", IntegerType(), True)
+				]), True),
+				StructField("components", StructType([
+					StructField("co", DoubleType(), True),
+					StructField("no", DoubleType(), True),
+					StructField("no2", DoubleType(), True),
+					StructField("o3", DoubleType(), True),
+					StructField("so2", DoubleType(), True),
+					StructField("pm2_5", DoubleType(), True),
+					StructField("pm10", DoubleType(), True),
+					StructField("nh3", DoubleType(), True)
+				]), True)
+				])
+				```
+				---
+				#### Saving the Data to a Delta Table
+				```Python
+				outputPath = "abfss://mb171@bd510fall23.dfs.core.windows.net/FinalProject520/aq_data"
+				checkpointLocationForWrite = "abfss://mb171@bd510fall23.dfs.core.windows.net/FinalProject520/checkpoint"
+
+				query = air_quality_df.writeStream \
+				.format("delta") \
+				.option("checkpointLocation", checkpointLocationForWrite) \
+				.outputMode("append") \
+				.start(outputPath)
+
+				query.awaitTermination()
+
+				```
+				
+
+				---
+				#### Results!
+				![](media/table.png)
+
+				---
+
+				## Data Validation and Analysis
+
+				---
+				## Qualitative Air Quality
+				![](media/AQI1.png)
+
+				---
+				## 2023 Sourdough Fire
+				[Wikipedia Article](https://en.wikipedia.org/wiki/Sourdough_Fire)
+
+				![](media/AQI3.png)
+
+				---
+				## 2023 Sourdough Fire
+				![](media/AQI2.png)
+
+				---
+				## Small town news
+				[Lake McMurray volunteer firefighters respond to call at their address. It's now being investigated as arson](https://www.king5.com/article/news/local/fire-burned-lake-mcmurrays-volunteer-fire-department-investigated-as-arson/281-921a203d-f5ff-448c-b12e-1e4175d93f62)
+
+				The fire started in a port-a-potty on the side of the fire station Tuesday morning. Some parts of the building were destroyed, while others were heavily damaged.
+
+				![](media/portajohnfire.png)
+
+				---
+				## Lake McMurray Fire
+				![](media/AQI4.png)
+
+			</textarea>
+		</section>
+		<section data-markdown class="larger-font">
+			<textarea data-template>
+				
+				## Challenges & Future Work
+
+				---
+				### Challenges
+				- Issues with the Confluent Apache Kafka Python Client and Lambda
+					- [How to Create a Confluent Python Lambda Layer](https://www.linkedin.com/pulse/how-create-confluent-python-lambda-layer-braeden-quirante/)
+				- Schema mapping
+				- Streaming is not batching
+				- Translating time between UTC local combined with datetime and epoch times
+				- Data Quality and outliers skewing data
+				---
+				### Future Work / Things I would do if I had more time
+				- Push notifications if a threshold is breached
+				- Push farther back into the historical data
+				- Add in image snapshots of smoke
+
+				---
+				# Questions?
+
+
+			</textarea>
+		</section>
+
+
+
+
+    </div>
+</div>
+
+<!-- Reveal.js library -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.js"></script>
+<!-- Markdown plugin -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4/plugin/markdown/markdown.js"></script>
+<!-- Highlight.js Script for code syntax highlighting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<!-- Initialize Reveal.js with plugins -->
+<script>
+    Reveal.initialize({
+        hash: true,
+        // Since Highlight.js is included separately, only include RevealMarkdown here
+        plugins: [ RevealMarkdown ]
+    });
+</script>
+</body>
+</html>
