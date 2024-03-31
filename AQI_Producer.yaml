@@ -1,0 +1,64 @@
+# This AWS SAM template has been generated from your function's configuration. If
+# your function has one or more triggers, note that the AWS resources associated
+# with these triggers aren't fully specified in this template and include
+# placeholder values. Open this template in AWS Application Composer or your
+# favorite IDE and modify it to specify a serverless application with other AWS
+# resources.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Application Model template describing your function.
+Resources:
+  AQIProducer:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Description: ''
+      MemorySize: 128
+      Timeout: 900
+      Handler: main.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      EphemeralStorage:
+        Size: 512
+      Environment:
+        Variables:
+          PROJECT_CONF: >-
+            {"openweathermap":{"key":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","uri":"api.openweathermap.org/data/2.5","coordinates":{"lat":"48.3263889","lon":"-122.0225556"}},"kafka":{"conf":{"bootstrap.servers":"xxxxxxxx.servicebus.windows.net:9093","security.protocol":"SASL_SSL","sasl.mechanism":"PLAIN","sasl.username":"$ConnectionString","sasl.password":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","client.id":"mb171-python-producer"},"topic":"mb171"},"aws":{"bucket_name":"xxxxxxxxxxxxx","region_name":"us-west-2","filepath":"data/data.json","lambda":"AQI_Producer"}}
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 21600
+        MaximumRetryAttempts: 2
+      Layers:
+        - arn:aws:lambda:us-west-2:471112844152:layer:ConfluentPythonSDK:5
+      PackageType: Zip
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+              Resource: arn:aws:logs:us-west-2:471112844152:*
+            - Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - >-
+                  arn:aws:logs:us-west-2:471112844152:log-group:/aws/lambda/AQI_Producer:*
+            - Sid: VisualEditor0
+              Effect: Allow
+              Action:
+                - lambda:UpdateFunctionCode
+                - s3:PutObject
+                - s3:PutObjectAcl
+                - s3:GetObject
+                - s3:GetObjectAcl
+                - lambda:PublishVersion
+                - s3:ListBucket
+              Resource:
+                - arn:aws:lambda:us-west-2:471112844152:function:AQI_Producer
+                - arn:aws:s3:::XXXXXXXXXXXXXXXX
+                - arn:aws:s3:::XXXXXXXXXXXXXXXX/*
+      SnapStart:
+        ApplyOn: None
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
